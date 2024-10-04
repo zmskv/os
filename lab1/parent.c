@@ -25,25 +25,24 @@ int main()
     }
 
     if (pid == 0)
-    {                   
-        close(pipe1[1]); 
-        close(pipe2[0]); 
+    {
+        close(pipe1[1]);
+        close(pipe2[0]);
 
-        
         dup2(pipe1[0], STDIN_FILENO);
         dup2(pipe2[1], STDOUT_FILENO);
 
         close(pipe1[0]);
         close(pipe2[1]);
 
-        execl("./child", "child", (char *)NULL); 
+        execl("./child", "child", (char *)NULL);
         perror("Execl failed");
         return 1;
     }
     else
-    {                   
-        close(pipe1[0]); 
-        close(pipe2[1]); 
+    {
+        close(pipe1[0]);
+        close(pipe2[1]);
 
         char fileName[BUFFER_SIZE];
         printf("Enter filename: ");
@@ -52,21 +51,18 @@ int main()
         write(pipe1[1], fileName, strlen(fileName));
         write(pipe1[1], "\n", 1);
 
-        
         char command[BUFFER_SIZE];
         printf("Enter command (numbers separated by spaces): ");
-        getchar(); 
+        getchar();
         fgets(command, BUFFER_SIZE, stdin);
 
- 
         write(pipe1[1], command, strlen(command));
-        write(pipe1[1], "\n", 1); 
+        write(pipe1[1], "\n", 1);
 
         wait(NULL);
 
-        close(pipe1[1]); 
+        close(pipe1[1]);
 
-        
         char buffer[BUFFER_SIZE];
         read(pipe2[0], buffer, BUFFER_SIZE);
         printf("Child process output: %s\n", buffer);

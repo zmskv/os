@@ -17,10 +17,8 @@ int main()
         return 1;
     }
 
-   
     filename[strcspn(filename, "\n")] = '\0';
 
-   
     FILE *file = fopen(filename, "w");
     if (file == NULL)
     {
@@ -28,7 +26,6 @@ int main()
         return 1;
     }
 
-    
     char command[BUFFER_SIZE];
     if (fgets(command, BUFFER_SIZE, stdin) == NULL)
     {
@@ -37,7 +34,6 @@ int main()
         return 1;
     }
 
-    
     int numbers[BUFFER_SIZE], num_count = 0;
     char *token = strtok(command, " ");
     while (token != NULL)
@@ -53,7 +49,6 @@ int main()
         return 1;
     }
 
-
     int result = numbers[0];
     for (int i = 1; i < num_count; i++)
     {
@@ -62,18 +57,15 @@ int main()
             fprintf(stderr, "Division by zero encountered. Terminating.\n");
             fprintf(file, "Error: Division by zero.\n");
             fclose(file);
-            return 1; 
+            return 1;
         }
         result /= numbers[i];
     }
 
-
     fprintf(file, "Result: %d\n", result);
-
 
     fclose(file);
 
-    
     printf("Result: %d\n", result);
 
     return 0;
