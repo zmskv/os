@@ -1,131 +1,137 @@
-#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
 #include <time.h>
 
-#define MAX_THREADS 8 // Максимальное количество потоков
+int *array;
+int num_elements;
+int max_threads;
+int current_threads = 0;
 
 typedef struct
 {
-    int *array;
     int left;
     int right;
-    int maxThreads;
 } ThreadData;
 
-void swap(int *a, int *b)
-{
-    int t = *a;
-    *a = *b;
-    *b = t;
-}
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-int partition(int arr[], int low, int high)
-{
-    int pivot = arr[high];
-    int i = (low - 1);
-    for (int j = low; j <= high - 1; j++)
-    {
-        if (arr[j] < pivot)
-        {
-            i++;
-            swap(&arr[i], &arr[j]);
-        }
-    }
-    swap(&arr[i + 1], &arr[high]);
-    return (i + 1);
-}
-
-void *quickSort(void *arg)
+void *quicksort(void *arg)
 {
     ThreadData *data = (ThreadData *)arg;
-    int *arr = data->array;
-    int low = data->left;
-    int high = data->right;
-    int maxThreads = data->maxThreads;
+    int left = data->left;
+    int right = data->right;
 
-    if (low < high)
+    if (left >= right)
+        return NULL;
+
+    int pivot = array[(left + right) / 2];
+    int i = left, j = right;
+
+    while (i <= j)
     {
-        int pi = partition(arr, low, high);
-
-        // Создание структуры для левого и правого подмассива
-        ThreadData leftData = {arr, low, pi - 1, maxThreads};
-        ThreadData rightData = {arr, pi + 1, high, maxThreads};
-
-        // Используем потоки только если их меньше, чем maxThreads
-        if (maxThreads > 1)
+        while (array[i] < pivot)
+            i++;
+        while (array[j] > pivot)
+            j--;
+        if (i <= j)
         {
-            pthread_t leftThread, rightThread;
-            pthread_create(&leftThread, NULL, quickSort, &leftData);
-            pthread_create(&rightThread, NULL, quickSort, &rightData);
-
-            pthread_join(leftThread, NULL);
-            pthread_join(rightThread, NULL);
-        }
-        else
-        {
-            // Если достигли максимального количества потоков, сортируем последовательно
-            quickSort(&leftData);
-            quickSort(&rightData);
+            int temp = array[i];
+            array[i] = array[j];
+            array[j] = temp;
+            i++;
+            j--;
         }
     }
+
+    pthread_t thread1, thread2;
+    ThreadData leftData = {left, j};
+    ThreadData rightData = {i, right};
+
+    pthread_mutex_lock(&mutex);
+    if (current_threads < max_threads)
+    {
+        current_threads++;
+        pthread_mutex_unlock(&mutex);
+        pthread_create(&thread1, NULL, quicksort, (void *)&leftData);
+    }
+    else
+    {
+        pthread_mutex_unlock(&mutex);
+        quicksort((void *)&leftData);
+    }
+
+    pthread_mutex_lock(&mutex);
+    if (current_threads < max_threads)
+    {
+        current_threads++;
+        pthread_mutex_unlock(&mutex);
+        pthread_create(&thread2, NULL, quicksort, (void *)&rightData);
+    }
+    else
+    {
+        pthread_mutex_unlock(&mutex);
+        quicksort((void *)&rightData);
+    }
+
+    // Ожидание завершения потоков
+    if (current_threads < max_threads)
+    {
+        pthread_join(thread1, NULL);
+        pthread_mutex_lock(&mutex);
+        current_threads--;
+        pthread_mutex_unlock(&mutex);
+    }
+
+    if (current_threads < max_threads)
+    {
+        pthread_join(thread2, NULL);
+        pthread_mutex_lock(&mutex);
+        current_threads--;
+        pthread_mutex_unlock(&mutex);
+    }
+
     return NULL;
+}
+
+void generate_array(int size)
+{
+    for (int i = 0; i < size; i++)
+    {
+        array[i] = rand() % 1000;
+    }
 }
 
 int main(int argc, char *argv[])
 {
     if (argc != 3)
     {
-        fprintf(stderr, "Использование: %s <количество_потоков> <размер_массива>\n", argv[0]);
+        printf("Использование: %s <количество элементов> <максимальное количество потоков>\n", argv[0]);
         return 1;
     }
 
-    int numThreads = atoi(argv[1]);
-    int arraySize = atoi(argv[2]);
-    if (numThreads <= 0 || arraySize <= 0 || numThreads > MAX_THREADS)
+    num_elements = atoi(argv[1]);
+    max_threads = atoi(argv[2]);
+
+    array = malloc(num_elements * sizeof(int));
+    if (array == NULL)
     {
-        fprintf(stderr, "Количество потоков должно быть положительным числом и не превышать %d\n", MAX_THREADS);
+        perror("Ошибка выделения памяти");
         return 1;
     }
 
-    int *arr = (int *)malloc(arraySize * sizeof(int));
-    if (!arr)
-    {
-        perror("Не удалось выделить память для массива");
-        return 1;
-    }
+    generate_array(num_elements);
 
-    srand(time(NULL));
-    for (int i = 0; i < arraySize; i++)
-    {
-        arr[i] = rand() % 100;
-    }
+    clock_t start_time = clock();
 
-    printf("Исходный массив: ");
-    for (int i = 0; i < arraySize; i++)
-    {
-        printf("%d ", arr[i]);
-    }
-    printf("\n");
+    ThreadData initialData = {0, num_elements - 1};
+    quicksort((void *)&initialData);
 
-    ThreadData data = {arr, 0, arraySize - 1, numThreads};
-    struct timespec start, end;
-    clock_gettime(CLOCK_MONOTONIC, &start);
+    clock_t end_time = clock();
+    double time_taken = ((double)(end_time - start_time)) / CLOCKS_PER_SEC;
 
-    quickSort(&data);
+    printf("Время выполнения: %f секунд\n", time_taken);
 
-    clock_gettime(CLOCK_MONOTONIC, &end);
-    double time_taken = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
-
-    printf("Отсортированный массив: ");
-    for (int i = 0; i < arraySize; i++)
-    {
-        printf("%d ", arr[i]);
-    }
-    printf("\n");
-
-    printf("Время выполнения сортировки: %f секунд\n", time_taken);
-
-    free(arr);
+    free(array);
     return 0;
 }
