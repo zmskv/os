@@ -7,7 +7,7 @@
 #include <unistd.h>
 
 #define BUFFER_SIZE 1024
-#define SHM_NAME "/my_shared_memmory"
+#define SHM_NAME "/my_shared_memory"
 
 int main()
 {
