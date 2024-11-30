@@ -1,26 +1,22 @@
 #!/usr/sbin/dtrace -s
 
-
-syscall::dlopen:entry
+pid$target::dlopen:entry
 /execname == "main_1" || execname == "main_2"/
 {
     printf("Process %s called dlopen() on fd %d\n", execname, arg0);
-    printf("Data: %s\n", copyinstr(arg1));
+    ustack();
 }
 
-
-syscall::E_Series:entry
+pid$target::dlsym:entry
 /execname == "main_1" || execname == "main_2"/
 {
-    printf("Process %s called E_Series on fd %d\n", execname, arg0);
-   
+    printf("Process %s called dlsym() on fd %d\n", execname, arg0);
+    ustack();
 }
 
-
-syscall::Pi_Leibniz:entry
+pid$target::dlclose:entry
 /execname == "main_1" || execname == "main_2"/
 {
-    printf("Process %s called Pi_Leibniz\n", execname);
+    printf("Process %s called dlclose() on fd %d\n", execname, arg0);
+    ustack();
 }
-
-
