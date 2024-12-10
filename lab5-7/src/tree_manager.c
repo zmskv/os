@@ -186,15 +186,13 @@ void cleanup_tree(Node *root)
     free(root);
 }
 
-// Функция для "убийства" узла и всех его потомков
 void kill_node(Node *node)
 {
     if (!node)
         return;
 
-    node->active = 0; // Отметить узел как неактивный
+    node->active = 0;
 
-    // Рекурсивно убиваем всех дочерних узлов
     kill_node(node->left);
     kill_node(node->right);
 }
