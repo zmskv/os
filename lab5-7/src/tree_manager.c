@@ -28,7 +28,7 @@ int add_node(int id, int parent_id)
     {
         if (parent_id != -1)
         {
-            return -1; 
+            return -1;
         }
         root = create_node(id, parent_id);
         return 0;
@@ -37,7 +37,7 @@ int add_node(int id, int parent_id)
     Node *parent = find_node(root, parent_id);
     if (!parent || !parent->active)
     {
-        return -1; 
+        return -1;
     }
 
     if (!parent->left)
@@ -50,7 +50,7 @@ int add_node(int id, int parent_id)
     }
     else
     {
-        return -1; 
+        return -1;
     }
     return 0;
 }
@@ -184,4 +184,42 @@ void cleanup_tree(Node *root)
     cleanup_tree(root->left);
     cleanup_tree(root->right);
     free(root);
+}
+
+// Функция для "убийства" узла и всех его потомков
+void kill_node(Node *node)
+{
+    if (!node)
+        return;
+
+    node->active = 0; // Отметить узел как неактивный
+
+    // Рекурсивно убиваем всех дочерних узлов
+    kill_node(node->left);
+    kill_node(node->right);
+}
+
+void handle_kill_command(const char *command)
+{
+    int id;
+    if (sscanf(command, "kill %d", &id) != 1)
+    {
+        printf("Error: Invalid command format\n");
+        return;
+    }
+
+    Node *target = find_node(root, id);
+    if (!target)
+    {
+        printf("Error:%d: Not found\n", id);
+        return;
+    }
+
+    kill_node(target);
+
+    printf("Ok: Node %d and its descendants are killed\n", id);
+
+    char message[256];
+    snprintf(message, sizeof(message), "KILL %d", id);
+    rabbitmq_send_message(message);
 }

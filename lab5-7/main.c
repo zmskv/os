@@ -37,6 +37,10 @@ int main()
         {
             break;
         }
+        else if (strncmp(command, "kill", 4) == 0)
+        {
+            handle_kill_command(command);
+        }
         else
         {
             printf("Error: Unknown command\n");
