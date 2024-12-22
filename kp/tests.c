@@ -15,11 +15,12 @@ void testBuddyAllocatorPerformance()
 
     size_t used_memory = 0;
     void *blocks[10];
+    int block_size = roundUpToPowerOfTwo(100);
     for (int i = 0; i < 10; i++)
     {
         blocks[i] = allocBuddy(buddyAllocator, 100);
         if (blocks[i])
-            used_memory += 100;
+            used_memory += block_size;
     }
 
     double utilization = (double)used_memory / memory_size;
